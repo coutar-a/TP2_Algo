@@ -79,6 +79,7 @@ ReseauGTFS::ReseauGTFS(const DonneesGTFS &p_gtfs)
             //we add the arc to the graph
                 m_leGraphe.ajouterArc(numSeqPrev, numSeqArret, weight);
 
+                //resize m_arretDuSommet if necessary
                 if (numSeqArret >= m_arretDuSommet.size() && it2 != arrets.end()) {
                     m_arretDuSommet.resize(numSeqArret + 1);
                 }
@@ -95,28 +96,24 @@ ReseauGTFS::ReseauGTFS(const DonneesGTFS &p_gtfs)
 
             }
 
-
-            //updating node lists for current station
-            //std::cout << "updating lists" << std::endl;
-            // if (numSeqNext >= m_arretDuSommet.size() &&  nextIterator != arrets.end()) {
-            //     m_arretDuSommet.resize(numSeqNext + 1);
-            // }
-              //  m_arretDuSommet[numSeqArret] = currentStop;
-               // m_sommetDeArret.insert({currentStop, numSeqArret});
-            //}
-
-            //if (!m_arretDuSommet[numSeqNext]) {
-               // m_arretDuSommet[numSeqNext] = nextStop;
-              //  m_sommetDeArret.insert({nextStop, numSeqNext});
-            //}
-
         }
 
     }
 
     //ajout des arcs dus aux attentes à chaque station
 
+    auto stationMap = p_gtfs.getStations();
 
+    for (auto stationPair : stationMap) {
+
+        auto stationStops = stationPair.second.getArrets();
+
+        for (auto it = stationStops.begin() ; it != stationStops.end() ; ++it) {
+
+            std::cout << it->first << std::endl;
+        }
+
+    }
 
     //ajouts des arcs dus aux transferts entre stations
 
