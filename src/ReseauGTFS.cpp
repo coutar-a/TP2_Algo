@@ -43,71 +43,78 @@ ReseauGTFS::ReseauGTFS(const DonneesGTFS &p_gtfs)
 : m_leGraphe(p_gtfs.getNbArrets()), m_origine_dest_ajoute(false)
 {
 
-    //ajout des arcs dus aux voyages et mise à jour de m_sommetDeArret ey m_arretDuSommet
-    m_arretDuSommet.resize(p_gtfs.getNbArrets());
-    for (auto elem : m_arretDuSommet) {elem = nullptr;}
+    m_nbArcsStationsVersDestination = 0;
+    m_nbArcsOrigineVersStations = 0;
+    size_t ctr = 0;
+    // m_arretDuSommet.resize(p_gtfs.getNbArrets());
+    // for (auto elem : m_arretDuSommet) {elem = nullptr;}
 
-        size_t ctr = 0;
+
+    //ajout des arcs dus aux voyages et mise à jour de m_sommetDeArret ey m_arretDuSommet
+
+
 
 
     auto voyages = p_gtfs.getVoyages();
+
     for (auto it = voyages.begin() ; it != voyages.end() ; ++it) {
         std::set<Arret::Ptr, Voyage::compArret> arrets = it->second.getArrets();
 
 
-        std::cout << std::endl;
         for (auto it2 = arrets.begin() ; it2 != arrets.end() ; ++it2) {
 
             if (it2 != arrets.begin()) {
                 Arret::Ptr currentStop = *it2;
                 auto prevIterator = std::prev(it2, 1);
                 Arret::Ptr prevStop = *(prevIterator);
-                //unsigned int numSeqArret = currentStop->getNumeroSequence();
-                //unsigned int numSeqPrev = prevStop->getNumeroSequence();
                 int weight = currentStop->getHeureArrivee() - prevStop->getHeureArrivee();
 
                 //std::cout << "first phase " <<weight << std::endl;
                 if (weight < 0) {
-                    throw std::logic_error("Negative weight");
+                    throw std::logic_error("ReseauGTFS::ReseauGTFS() : Negative weight");
                 }
 
-                //std::cout << ctr << std::endl;
+
             //we add the arc to the graph
-                //m_leGraphe.ajouterArc(numSeqPrev, numSeqArret, weight);
-                m_leGraphe.ajouterArc(ctr, ctr + 1, weight);
 
+                m_leGraphe.ajouterArc(m_sommetDeArret[prevStop], m_sommetDeArret[currentStop], weight);
 
-                if (m_arretDuSommet[ctr] == nullptr) {
-                    m_arretDuSommet[ctr] = prevStop;
-                    m_sommetDeArret.insert({prevStop, ctr});
-                }
-                ctr++;
-                m_arretDuSommet[ctr] = currentStop;
-                m_sommetDeArret.insert({currentStop, ctr});
+                // m_leGraphe.ajouterArc(ctr, ctr + 1, weight);
 
-                // //resize m_arretDuSommet if necessary
-                // if (numSeqArret >= m_arretDuSommet.size() && it2 != arrets.end()) {
-                //     m_arretDuSommet.resize(numSeqArret + 1);
+                // if (m_arretDuSommet[ctr] == nullptr) {
+                //     m_arretDuSommet[ctr] = prevStop;
+                //     m_sommetDeArret.insert({prevStop, ctr});
                 // }
-
-                // //could stand not to use sequence numbers, will see later
-                // if (m_arretDuSommet[numSeqPrev] == nullptr) {
-                //     m_arretDuSommet[numSeqPrev] = prevStop;
-                //     m_sommetDeArret.insert({prevStop, numSeqPrev});
+                // m_arretDuSommet[ctr] = currentStop;
+                // m_sommetDeArret.insert({currentStop, ctr});
+                // if (m_arretDuSommet[ctr] == nullptr) {
+                //     m_arretDuSommet[ctr] = prevStop;
+                //     m_sommetDeArret.insert({prevStop, ctr});
                 // }
+                // ctr++;
+                // m_arretDuSommet[ctr] = currentStop;
+                // m_sommetDeArret.insert({currentStop, ctr});
 
-                // if (m_arretDuSommet[numSeqArret] == nullptr) {
-                //     m_arretDuSommet[numSeqArret] = currentStop;
-                //     m_sommetDeArret.insert({currentStop, numSeqArret});
+                //  m_leGraphe.ajouterArc(ctr - 1, ctr, weight);
+
+                //  if (m_arretDuSommet[ctr - 1] == nullptr) {
+                //     m_arretDuSommet[ctr - 1] = prevStop;
+                //     m_sommetDeArret.insert({prevStop, ctr - 1});
                 // }
-
+                // m_arretDuSommet[ctr] = currentStop;
+                // m_sommetDeArret.insert({currentStop, ctr});
             }
+            m_arretDuSommet.push_back(*it2);
+            m_sommetDeArret.insert({*it2, (m_arretDuSommet.size() + 1)});
+            //ctr++;
 
         }
 
     }
 
-    std::cout << std::endl << std::endl << std::endl;
+    std::cout << "phase 1 end " <<ctr << std::endl;
+    std::cout << m_sommetDeArret.size() << std::endl;
+    std::cout << m_leGraphe.getNbSommets() << std::endl;
     //ajout des arcs dus aux attentes à chaque station
 
     auto stationMap = p_gtfs.getStations();
@@ -123,15 +130,14 @@ ReseauGTFS::ReseauGTFS(const DonneesGTFS &p_gtfs)
                 Arret::Ptr currentStop = it->second;
                 auto prevIterator = std::prev(it, 1);
                 Arret::Ptr prevStop = prevIterator->second;
-                //unsigned int numSeqArret = currentStop->getNumeroSequence();
-                //unsigned int numSeqPrev = prevStop->getNumeroSequence();
                 int weight = currentStop->getHeureArrivee() - prevStop->getHeureArrivee();
 
                 if (weight < 0) {
-                    throw std::logic_error("Negative weight");
+                    throw std::logic_error("ReseauGTFS::ReseauGTFS() : Negative weight");
                 }
                 //std::cout << "second phase "<< weight << std::endl;
                 //m_leGraphe.ajouterArc(numSeqPrev, numSeqArret, weight);
+                //std::cout << m_sommetDeArret[prevStop] << " " <<  m_sommetDeArret[currentStop] << std::endl;
                 m_leGraphe.ajouterArc(m_sommetDeArret[prevStop], m_sommetDeArret[currentStop], weight);
             }
         }
@@ -155,25 +161,21 @@ ReseauGTFS::ReseauGTFS(const DonneesGTFS &p_gtfs)
 
         for (auto stop : startStops) {
 
-            Heure ETA = stop.first;
+            Heure ETA = stop.second->getHeureDepart();
             ETA.add_secondes(travelTime);
             auto closestCandidate = destStops.lower_bound(ETA);
 
             if (closestCandidate != destStops.end()) {
 
-                int weight = ((*closestCandidate).second->getHeureDepart() - stop.first) + travelTime;
+                int weight = ((*closestCandidate).second->getHeureDepart() - stop.second->getHeureDepart()) + travelTime;
                 if (weight < 0) {
-                    throw std::logic_error("Negative weight");
+                    throw std::logic_error("ReseauGTFS::ReseauGTFS() : Negative weight");
                 }
 
-                std::cout << "third phase " << weight << std::endl;
+               //std::cout << "third phase " << weight << std::endl;
                 m_leGraphe.ajouterArc(m_sommetDeArret[stop.second], m_sommetDeArret[(*closestCandidate).second], weight);
-                //m_leGraphe.ajouterArc(stop.second->getNumeroSequence(), (*closestCandidate).second->getNumeroSequence(), weight);
 
             }
-
-
-            //m_leGraphe.ajouterArc(stop.second->getNumeroSequence(), closestCandidate.second->getNumeroSequence(), closestCandidate.second.getHeureDepart + travelTime);
         }
 
     }
@@ -194,9 +196,102 @@ void ReseauGTFS::ajouterArcsOrigineDestination(const DonneesGTFS &p_gtfs, const 
    const Coordonnees &p_pointDestination)
 {
 
+    //values are uninmportant
+    Arret::Ptr origine(new Arret(stationIdOrigine, Heure(0,0,0), Heure(0,0,0), 0, "42"));
+    Arret::Ptr destination(new Arret(stationIdDestination, Heure(0,0,0), Heure(0,0,0), 99999, "42"));
+
+    //index of the last element in m_arretDuSommet
+    Arret::Ptr lastElement = m_arretDuSommet.back();
+    size_t index = 0;
+    for (auto it = m_arretDuSommet.begin() ; *it != lastElement ; ++it) {
+        index++;
+    }
+
+    std::cout << index << std::endl;
+    std::cout << p_gtfs.getNbArrets() << std::endl;
+    std::cout << m_leGraphe.getNbSommets() << std::endl;
+    // std::cout << ((m_arretDuSommet[index] == lastElement) ? "true" : "false") << std::endl;
+    //origin info
+
+    m_leGraphe.resize(p_gtfs.getNbArrets() + 2);
+    ++index;
+    m_arretDuSommet[index] = origine;
+    m_sommetDeArret.insert({origine, index});
+    m_sommetOrigine = index;
+    m_origine_dest_ajoute = true;
+
+    //destination info
+    ++index;
+    m_arretDuSommet[index] = destination;
+    m_sommetDeArret.insert({destination, index});
+    m_sommetDestination = index;
+
     //ajout des arcs à pieds entre le point source et les arrets des stations atteignables
 
+    auto stationMap = p_gtfs.getStations();
+
+    for (auto stationPair : stationMap) {
+
+        Coordonnees stationCoords = stationPair.second.getCoords();
+        double distance = stationCoords - p_pointOrigine;
+
+        if (distance <= distanceMaxMarche) {
+
+           // std::cout << distance << " " << distanceMaxMarche << std::endl;
+            double travelTime = (distance / vitesseDeMarche) * 3600;
+            auto stationStops = stationPair.second.getArrets();
+            Heure startingHour = p_gtfs.getTempsDebut();
+            startingHour.add_secondes(travelTime);
+            auto closestCandidate = stationStops.lower_bound(startingHour);
+
+         //   std::cout << stationPair.second.getDescription() << std::endl;
+
+            if (closestCandidate != stationStops.end()) {
+                //std::cout << (*closestCandidate).second->getStationId() << std::endl;
+
+                //if ((*closestCandidate).second->getStationId() == 5036) {std::cout << distance << std::endl;}
+                //int weight = ((*closestCandidate).second->getHeureDepart() - p_gtfs.getTempsDebut()) + travelTime;
+                int weight = ((*closestCandidate).second->getHeureDepart() - startingHour);
+                //int weight = ((*closestCandidate).second->getHeureDepart() - p_gtfs.getTempsDebut());
+
+
+                if (weight < 0) {
+                    throw std::logic_error("ReseauGTFS::ajouterArcsOrigineDestination() : Negative weight");
+                }
+                m_leGraphe.ajouterArc(m_sommetOrigine, m_sommetDeArret[(*closestCandidate).second], weight);
+                ++m_nbArcsOrigineVersStations;
+            }
+        }
+    }
+
+
     //ajout des arcs à pieds des arrêts de certaine stations vers l'arret point destination
+
+    //auto stationMap = p_gtfs.getStations();
+
+    for (auto stationPair : stationMap) {
+
+        Coordonnees stationCoords = stationPair.second.getCoords();
+        double distance = stationCoords - p_pointDestination;
+
+       // std::cout << stationPair.second.getDescription() << std::endl;
+        if (distance <= distanceMaxMarche) {
+
+        //std::cout << distance << " " << distanceMaxMarche << std::endl;
+            double travelTime = (distance / vitesseDeMarche) * 3600;
+            auto stationStops = stationPair.second.getArrets();
+
+            for (auto stop : stationStops) {
+
+                //std::cout << stop.second->getStationId() << std::endl;
+                 if (stop.second->getStationId() == 5036) {std::cout << distance << std::endl;}
+                int weight = travelTime;
+
+                m_leGraphe.ajouterArc(m_sommetDeArret[(stop).second], m_sommetDestination, weight);
+                ++m_nbArcsStationsVersDestination;
+            }
+        }
+    }
 
 }
 
